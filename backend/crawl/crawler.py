@@ -17,30 +17,21 @@ class CrawlWebsite(BaseModel):
 
     def _crawl(self, url):
         response = requests.get(url)
-        if response.status_code == 200:
-            return response.text
-        else:
-            return None
+        return response.text if response.status_code == 200 else None
 
     def process(self):
         content = self._crawl(self.url)
-            
+
         ## Create a file
-        file_name = slugify(self.url) + ".html"
+        file_name = f"{slugify(self.url)}.html"
         temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
         with open(temp_file_path, 'w') as temp_file:
             temp_file.write(content)
             ## Process the file
-        
-        if content:
-            return temp_file_path, file_name
-        else:
-            return None
+
+        return (temp_file_path, file_name) if content else None
     def checkGithub(self):
-        if "github.com" in self.url:
-            return True
-        else:
-            return False
+        return "github.com" in self.url
 
 
 

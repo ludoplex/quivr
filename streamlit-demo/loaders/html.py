@@ -14,20 +14,17 @@ def process_html(vector_store, file, stats_db):
 
 def get_html(url):
     response = requests.get(url)
-    if response.status_code == 200:
-        return response.text
-    else:
-        return None
+    return response.text if response.status_code == 200 else None
 
 def create_html_file(url, content):
-    file_name = slugify(url) + ".html"
+    file_name = f"{slugify(url)}.html"
     temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
     with open(temp_file_path, 'w') as temp_file:
         temp_file.write(content)
 
     record = UploadedFileRec(id=None, name=file_name, type='text/html', data=open(temp_file_path, 'rb').read())
     uploaded_file = UploadedFile(record)
-    
+
     return uploaded_file, temp_file_path
 
 def delete_tempfile(temp_file_path, url, ret):

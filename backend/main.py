@@ -38,7 +38,7 @@ async def startup_event():
 @app.post("/upload", dependencies=[Depends(JWTBearer())])
 async def upload_file(commons: CommonsDep,  file: UploadFile, enable_summarization: bool = False, credentials: dict = Depends(JWTBearer())):
     max_brain_size = os.getenv("MAX_BRAIN_SIZE")
-   
+
     user = User(email=credentials.get('email', 'none'))
     user_vectors_response = commons['supabase'].table("vectors").select(
         "name:metadata->>file_name, size:metadata->>file_size", count="exact") \
@@ -46,7 +46,7 @@ async def upload_file(commons: CommonsDep,  file: UploadFile, enable_summarizati
             .execute()
     documents = user_vectors_response.data  # Access the data from the response
     # Convert each dictionary to a tuple of items, then to a set to remove duplicates, and then back to a dictionary
-    user_unique_vectors = [dict(t) for t in set(tuple(d.items()) for d in documents)]
+    user_unique_vectors = [dict(t) for t in {tuple(d.items()) for d in documents}]
 
     current_brain_size = sum(float(doc['size']) for doc in user_unique_vectors)
 
@@ -54,12 +54,16 @@ async def upload_file(commons: CommonsDep,  file: UploadFile, enable_summarizati
 
     remaining_free_space =  float(max_brain_size) - (current_brain_size)
 
-    if remaining_free_space - file_size < 0:
-        message = {"message": f"❌ User's brain will exceed maximum capacity with this upload. Maximum file allowed is : {convert_bytes(remaining_free_space)}", "type": "error"}
-    else: 
-        message = await filter_file(file, enable_summarization, commons['supabase'], user)
- 
-    return message
+    return (
+        {
+            "message": f"❌ User's brain will exceed maximum capacity with this upload. Maximum file allowed is : {convert_bytes(remaining_free_space)}",
+            "type": "error",
+        }
+        if remaining_free_space - file_size < 0
+        else await filter_file(
+            file, enable_summarization, commons['supabase'], user
+        )
+    )
 
 
 @app.post("/chat/", dependencies=[Depends(JWTBearer())])
@@ -116,7 +120,7 @@ async def chat_endpoint(commons: CommonsDep, chat_message: ChatMessage, credenti
 @app.post("/crawl/", dependencies=[Depends(JWTBearer())])
 async def crawl_endpoint(commons: CommonsDep, crawl_website: CrawlWebsite, enable_summarization: bool = False, credentials: dict = Depends(JWTBearer())):
     max_brain_size = os.getenv("MAX_BRAIN_SIZE")
-   
+
     user = User(email=credentials.get('email', 'none'))
     user_vectors_response = commons['supabase'].table("vectors").select(
         "name:metadata->>file_name, size:metadata->>file_size", count="exact") \
@@ -124,7 +128,7 @@ async def crawl_endpoint(commons: CommonsDep, crawl_website: CrawlWebsite, enabl
             .execute()
     documents = user_vectors_response.data  # Access the data from the response
     # Convert each dictionary to a tuple of items, then to a set to remove duplicates, and then back to a dictionary
-    user_unique_vectors = [dict(t) for t in set(tuple(d.items()) for d in documents)]
+    user_unique_vectors = [dict(t) for t in {tuple(d.items()) for d in documents}]
 
     current_brain_size = sum(float(doc['size']) for doc in user_unique_vectors)
 
@@ -147,8 +151,9 @@ async def crawl_endpoint(commons: CommonsDep, crawl_website: CrawlWebsite, enabl
 
             # Pass the SpooledTemporaryFile to UploadFile
             file = UploadFile(file=spooled_file, filename=file_name)
-            message = await filter_file(file, enable_summarization, commons['supabase'], user=user)
-            return message
+            return await filter_file(
+                file, enable_summarization, commons['supabase'], user=user
+            )
         else:
             message = await process_github(crawl_website.url, "false", user=user, supabase=commons['supabase'])
 
@@ -160,7 +165,7 @@ async def explore_endpoint(commons: CommonsDep,credentials: dict = Depends(JWTBe
         "name:metadata->>file_name, size:metadata->>file_size", count="exact").filter("user_id", "eq", user.email).execute()
     documents = response.data  # Access the data from the response
     # Convert each dictionary to a tuple of items, then to a set to remove duplicates, and then back to a dictionary
-    unique_data = [dict(t) for t in set(tuple(d.items()) for d in documents)]
+    unique_data = [dict(t) for t in {tuple(d.items()) for d in documents}]
     # Sort the list of documents by size in decreasing order
     unique_data.sort(key=lambda x: int(x['size']), reverse=True)
 
@@ -199,7 +204,7 @@ async def get_user_endpoint(commons: CommonsDep, credentials: dict = Depends(JWT
             .execute()
     documents = user_vectors_response.data  # Access the data from the response
     # Convert each dictionary to a tuple of items, then to a set to remove duplicates, and then back to a dictionary
-    user_unique_vectors = [dict(t) for t in set(tuple(d.items()) for d in documents)]
+    user_unique_vectors = [dict(t) for t in {tuple(d.items()) for d in documents}]
 
     current_brain_size = sum(float(doc['size']) for doc in user_unique_vectors)
 

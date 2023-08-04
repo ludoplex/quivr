@@ -15,18 +15,15 @@ from .common import process_file
 async def process_github(repo, enable_summarization, user, supabase): 
     random_dir_name = os.urandom(16).hex()
     dateshort = time.strftime("%Y%m%d")
-    loader = GitLoader(
-    clone_url=repo,
-    repo_path="/tmp/" + random_dir_name,
-    )
+    loader = GitLoader(clone_url=repo, repo_path=f"/tmp/{random_dir_name}")
     documents = loader.load()
-    os.system("rm -rf /tmp/" + random_dir_name)
+    os.system(f"rm -rf /tmp/{random_dir_name}")
 
     chunk_size = 500
     chunk_overlap = 0
     text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    
+
     documents = text_splitter.split_documents(documents)
     print(documents[:1])
 

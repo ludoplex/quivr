@@ -56,7 +56,7 @@ def create_summary(document_id, content, metadata):
             {"document_id": document_id}).match({"id": sids[0]}).execute()
 
 def create_vector(user_id,doc):
-    logger.info(f"Creating vector for document")
+    logger.info("Creating vector for document")
     logger.info(f"Document: {doc}")
     try:
         sids = documents_vector_store.add_documents(
